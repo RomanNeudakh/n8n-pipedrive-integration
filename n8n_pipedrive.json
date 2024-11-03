@@ -1,0 +1,623 @@
+{
+  "name": "n8n-pipedrive",
+  "nodes": [
+    {
+      "parameters": {
+        "sendTo": "={{ $json.current['615c07d01908e774ed808dfd238456088b69d347'] }}",
+        "subject": "🎉 Welcome to YMCA Fitness Studio! We'd Love to Hear from You!",
+        "emailType": "text",
+        "message": "=Hi  {{ $json.current.person_name }} We’re thrilled to welcome you to the YMCA Fitness Studio family! 🏋️‍♂️💪 Thank you for choosing us as your fitness partner. We’re excited to support you on your journey toward your fitness goals.",
+        "options": {}
+      },
+      "id": "fbdeb1d0-0bc2-47c3-99ce-f611135380f1",
+      "name": "Gmail",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        -20,
+        480
+      ],
+      "webhookId": "b2e3fbbf-a66b-46ee-ac1c-8aaf4b4d228e",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "40rfrKJD1aQHxy2q",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "activity",
+        "subject": "Make an initial call to introduce the YMCA Fitness Studio and its offerings",
+        "type": "call",
+        "additionalFields": {
+          "deal_id": "={{ $json.meta.id }}",
+          "due_date": "={{ new Date(new Date($json.current.update_time).setDate(new Date($json.current.update_time).getDate() + 1)).toLocaleDateString(\"en-US\", { month: \"2-digit\", day: \"2-digit\", year: \"2-digit\" }) }}",
+          "note": "={{ \n  \"Record any key points discussed during the call, such as specific fitness goals, challenges, or preferred workout times. Note if the client seems interested in a specific program or trainer.\\n\\n\" + \n  \"Lead info:\\n\" + \n  \"- Name: \" + $json.current.person_name + \"\\n\" + \n  \"- Phone: \" + $json.current['61ad4586c8adb05e1904fdcd6a91a47fef7e6717'] + \"\\n\" + \n  \"- Email: \" + $json.current['615c07d01908e774ed808dfd238456088b69d347'] \n}}\n\n"
+        }
+      },
+      "id": "d8d8dbfc-7ecd-4d53-8ecd-e73550a13499",
+      "name": "CreateActivity-Call-1Stage",
+      "type": "n8n-nodes-base.pipedrive",
+      "typeVersion": 1,
+      "position": [
+        480,
+        -120
+      ],
+      "executeOnce": false,
+      "alwaysOutputData": true,
+      "credentials": {
+        "pipedriveApi": {
+          "id": "RPNZvKB6JcaYVlve",
+          "name": "Pipedrive account - API KEY"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "action": "updated",
+        "object": "deal"
+      },
+      "id": "f2330fc5-702b-430f-877a-c95e5def506a",
+      "name": "Pipedrive Trigger - Deal Updated",
+      "type": "n8n-nodes-base.pipedriveTrigger",
+      "typeVersion": 1,
+      "position": [
+        -260,
+        240
+      ],
+      "webhookId": "18ebf057-57ae-4321-ad89-1526e4c15dae",
+      "notesInFlow": true,
+      "credentials": {
+        "pipedriveApi": {
+          "id": "RPNZvKB6JcaYVlve",
+          "name": "Pipedrive account - API KEY"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "8d4b9e3f-27da-4940-99f0-d38387999d7d",
+              "leftValue": "={{ $json.current.stage_order_nr }}",
+              "rightValue": "={{ $json.previous.stage_order_nr }}",
+              "operator": {
+                "type": "number",
+                "operation": "notEquals"
+              }
+            },
+            {
+              "id": "98259015-305d-4d96-bb5c-67ec97bf5cba",
+              "leftValue": "={{ $json.current.followers_count }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {
+          "ignoreCase": false
+        }
+      },
+      "id": "184d3787-89cf-4052-9da2-bc2ce5bae45f",
+      "name": "If - follow-up stage",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -60,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "8725452f-d454-45eb-831c-ed851e9dd79e",
+              "leftValue": "={{ $json.current.status }}",
+              "rightValue": "={{ $json.previous.status }}",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              }
+            },
+            {
+              "id": "f06855d6-2f8d-4d83-b105-2d53c7459de0",
+              "leftValue": "={{ $json.current.status }}",
+              "rightValue": "won",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "4fa119d4-9c71-4996-b446-f3902ce94fe4",
+      "name": "If  - won deal",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -260,
+        680
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "activity",
+        "subject": "Arrange for the client to attend a free demo class",
+        "type": "task",
+        "additionalFields": {
+          "deal_id": "={{ $json.meta.id }}",
+          "due_date": "={{ new Date(new Date($json.current.update_time).setDate(new Date($json.current.update_time).getDate() + 1)).toLocaleDateString(\"en-US\", { month: \"2-digit\", day: \"2-digit\", year: \"2-digit\" }) }}",
+          "note": "={{ \n  \"Confirm the demo details (date, time, instructor) and send a reminder to the client. After the demo, record any feedback and gauge the client’s level of interest in signing up.\\n\\n\" + \n  \"Lead info:\\n\" + \n  \"- Name: \" + $json.current.person_name + \"\\n\" + \n  \"- Phone: \" + $json.current['61ad4586c8adb05e1904fdcd6a91a47fef7e6717'] + \"\\n\" + \n  \"- Email: \" + $json.current['615c07d01908e774ed808dfd238456088b69d347'] \n}}\n\n"
+        }
+      },
+      "id": "6d4bd6cd-7b8f-4fb9-b6af-8c672568d4cc",
+      "name": "CreateActivity-Task-3Stage",
+      "type": "n8n-nodes-base.pipedrive",
+      "typeVersion": 1,
+      "position": [
+        480,
+        240
+      ],
+      "credentials": {
+        "pipedriveApi": {
+          "id": "RPNZvKB6JcaYVlve",
+          "name": "Pipedrive account - API KEY"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "activity",
+        "subject": "Schedule a face-to-face or virtual meeting to discuss the client’s needs",
+        "type": "Meeting",
+        "additionalFields": {
+          "deal_id": "={{ $json.meta.id }}",
+          "due_date": "={{ new Date(new Date($json.current.update_time).setDate(new Date($json.current.update_time).getDate() + 1)).toLocaleDateString(\"en-US\", { month: \"2-digit\", day: \"2-digit\", year: \"2-digit\" }) }}",
+          "note": "={{ \n  \"Prepare for the meeting by bringing personalized membership recommendations based on the initial call. Make note of any questions or objections the client raises about the membership options.\\n\\n\" + \n  \"Lead info:\\n\" + \n  \"- Name: \" + $json.current.person_name + \"\\n\" + \n  \"- Phone: \" + $json.current['61ad4586c8adb05e1904fdcd6a91a47fef7e6717'] + \"\\n\" + \n  \"- Email: \" + $json.current['615c07d01908e774ed808dfd238456088b69d347'] \n}}\n\n"
+        }
+      },
+      "id": "3a78d58f-273a-4026-a6fa-a8f87a6ecba7",
+      "name": "CreateActivity-Meeting-2Stage",
+      "type": "n8n-nodes-base.pipedrive",
+      "typeVersion": 1,
+      "position": [
+        480,
+        60
+      ],
+      "credentials": {
+        "pipedriveApi": {
+          "id": "RPNZvKB6JcaYVlve",
+          "name": "Pipedrive account - API KEY"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "activity",
+        "subject": "Follow up with the client after the demo to discuss the membership proposal in detail",
+        "type": "call",
+        "additionalFields": {
+          "deal_id": "={{ $json.meta.id }}",
+          "due_date": "={{ new Date(new Date($json.current.update_time).setDate(new Date($json.current.update_time).getDate() + 1)).toLocaleDateString(\"en-US\", { month: \"2-digit\", day: \"2-digit\", year: \"2-digit\" }) }}",
+          "note": "={{ \n  \"Be prepared to negotiate slightly if needed, and note down any specific objections the client may have. Emphasize the benefits they expressed interest in during earlier interactions.\\n\\n\" + \n  \"Lead info:\\n\" + \n  \"- Name: \" + $json.current.person_name + \"\\n\" + \n  \"- Phone: \" + $json.current['61ad4586c8adb05e1904fdcd6a91a47fef7e6717'] + \"\\n\" + \n  \"- Email: \" + $json.current['615c07d01908e774ed808dfd238456088b69d347'] \n}}\n\n"
+        }
+      },
+      "id": "56d98fb6-f16c-42ba-9732-e0f2411352d6",
+      "name": "CreateActivity-Call-4Stage",
+      "type": "n8n-nodes-base.pipedrive",
+      "typeVersion": 1,
+      "position": [
+        480,
+        420
+      ],
+      "credentials": {
+        "pipedriveApi": {
+          "id": "RPNZvKB6JcaYVlve",
+          "name": "Pipedrive account - API KEY"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "activity",
+        "subject": "Assign a task to finalize the offer",
+        "type": "call",
+        "additionalFields": {
+          "deal_id": "={{ $json.meta.id }}",
+          "due_date": "={{ new Date(new Date($json.current.update_time).setDate(new Date($json.current.update_time).getDate() + 1)).toLocaleDateString(\"en-US\", { month: \"2-digit\", day: \"2-digit\", year: \"2-digit\" }) }}",
+          "note": "={{ \n  \"Ensure all terms are documented, including any special rates, add-ons, or payment plans. Prepare a final contract for the client to review and sign.\\n\\n\" + \n  \"Lead info:\\n\" + \n  \"- Name: \" + $json.current.person_name + \"\\n\" + \n  \"- Phone: \" + $json.current['61ad4586c8adb05e1904fdcd6a91a47fef7e6717'] + \"\\n\" + \n  \"- Email: \" + $json.current['615c07d01908e774ed808dfd238456088b69d347'] \n}}\n\n"
+        }
+      },
+      "id": "404c9bd3-c02c-4c91-b09f-a2cdee1e9ce1",
+      "name": "CreateActivity-Call-5Stage",
+      "type": "n8n-nodes-base.pipedrive",
+      "typeVersion": 1,
+      "position": [
+        480,
+        600
+      ],
+      "credentials": {
+        "pipedriveApi": {
+          "id": "RPNZvKB6JcaYVlve",
+          "name": "Pipedrive account - API KEY"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "C07UFH44D1U",
+          "mode": "list",
+          "cachedResultName": "all-n8n-pipedrive-integration"
+        },
+        "text": "=Congratulations on closing the deal with {{ $json.current.person_name }}",
+        "otherOptions": {}
+      },
+      "id": "ceb5319b-cb9d-40dc-8ab0-2d5d3e6a050d",
+      "name": "Slack-win",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.2,
+      "position": [
+        -20,
+        660
+      ],
+      "webhookId": "25a82ab6-dece-4056-bb4e-e5077a9cb861",
+      "credentials": {
+        "slackOAuth2Api": {
+          "id": "l4AamFABlVoslzab",
+          "name": "Slack account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "C07UFH44D1U",
+          "mode": "list",
+          "cachedResultName": "all-n8n-pipedrive-integration"
+        },
+        "text": "={{ $json.note }}",
+        "otherOptions": {}
+      },
+      "id": "654ec105-531a-4e4f-b169-2da2cf530c77",
+      "name": "Slack-task",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.2,
+      "position": [
+        780,
+        240
+      ],
+      "webhookId": "25a82ab6-dece-4056-bb4e-e5077a9cb861",
+      "credentials": {
+        "slackOAuth2Api": {
+          "id": "l4AamFABlVoslzab",
+          "name": "Slack account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.current.stage_order_nr }}",
+                    "rightValue": 1,
+                    "operator": {
+                      "type": "number",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Satge1"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "46632b71-0ecf-4a5f-9a34-4c46eff6d4a9",
+                    "leftValue": "={{ $json.current.stage_order_nr }}",
+                    "rightValue": 2,
+                    "operator": {
+                      "type": "number",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Satge2"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "374b1799-8ad7-4a5d-8381-d9705c6ff773",
+                    "leftValue": "={{ $json.current.stage_order_nr }}",
+                    "rightValue": 3,
+                    "operator": {
+                      "type": "number",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Satge3"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "8f54bebf-6342-4a5a-9d64-c8749708be7f",
+                    "leftValue": "={{ $json.current.stage_order_nr }}",
+                    "rightValue": 4,
+                    "operator": {
+                      "type": "number",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Satge4"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "81ebf26d-18c1-4b32-bd86-8ffee0d434f1",
+                    "leftValue": "={{ $json.current.stage_order_nr }}",
+                    "rightValue": 5,
+                    "operator": {
+                      "type": "number",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Satge5"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "f53e319c-c098-482d-b2fd-521e7521b707",
+      "name": "follow-up-stage",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        200,
+        220
+      ],
+      "executeOnce": false
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Pipedrive Trigger - Deal Updated": {
+      "main": [
+        [
+          {
+            "node": "If - follow-up stage",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If - follow-up stage": {
+      "main": [
+        [
+          {
+            "node": "follow-up-stage",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "If  - won deal",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If  - won deal": {
+      "main": [
+        [
+          {
+            "node": "Gmail",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Slack-win",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CreateActivity-Task-3Stage": {
+      "main": [
+        [
+          {
+            "node": "Slack-task",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CreateActivity-Meeting-2Stage": {
+      "main": [
+        [
+          {
+            "node": "Slack-task",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CreateActivity-Call-1Stage": {
+      "main": [
+        [
+          {
+            "node": "Slack-task",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CreateActivity-Call-4Stage": {
+      "main": [
+        [
+          {
+            "node": "Slack-task",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CreateActivity-Call-5Stage": {
+      "main": [
+        [
+          {
+            "node": "Slack-task",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "follow-up-stage": {
+      "main": [
+        [
+          {
+            "node": "CreateActivity-Call-1Stage",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "CreateActivity-Meeting-2Stage",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "CreateActivity-Task-3Stage",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "CreateActivity-Call-4Stage",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "CreateActivity-Call-5Stage",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataSuccessExecution": "none",
+    "saveExecutionProgress": true,
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": "0u9i4Uph04r5v7Th"
+  },
+  "versionId": "20f6f7fb-e28c-48e2-8682-e585a4f5763a",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "7dc9752d2ae2862178e57e0c261db270fc74c664fe131e68834b77d644be6b55"
+  },
+  "id": "0u9i4Uph04r5v7Th",
+  "tags": []
+}
